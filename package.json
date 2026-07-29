@@ -1,7 +1,7 @@
 {
   "name": "do-assign",
   "version": "0.0.0",
-  "description": "",
+  "description": "Merge local values into the host custom element or a remote peer element, when events on the adorned element fire.",
   "homepage": "https://github.com/bahrus/do-assign#readme",
   "bugs": {
     "url": "https://github.com/bahrus/do-assign/issues"
@@ -15,6 +15,22 @@
   "type": "module",
   "main": "do-assign.js",
   "scripts": {
-    "test": "playwright test"
+    "build": "node build.mjs",
+    "serve": "node ./node_modules/spa-ssi/serve.js",
+    "test": "playwright test",
+    "safari": "npx playwright wk http://localhost:8000",
+    "update": "ncu -u && npm install"
+  },
+  "dependencies": {
+    "assign-gingerly": "0.0.68",
+    "be-hive": "0.1.15",
+    "id-generation": "0.0.5",
+    "mount-observer": "0.1.43",
+    "nested-regex-groups": "0.0.7",
+    "roundabout-lib": "0.0.28"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.0",
+    "spa-ssi": "0.0.27"
   }
 }

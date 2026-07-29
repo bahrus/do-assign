@@ -1,0 +1,29 @@
+{
+    "enhConfig": {
+        "enhKey": "🪧",
+        "spawn": "do-assign/do-assign.js",
+        "withAttrs": {
+            "base": "🪧",
+            "_base": {
+                "mapsTo": "assignConfig",
+                "instanceOf": "Object"
+            },
+            "host": "${base}-host"
+        }
+    },
+    "customData": {
+        "weakRef": {
+            "properties": [
+                "enhancedElement"
+            ]
+        },
+        "actions": {
+            "hydrate": {
+                "ifAllOf": [
+                    "assignConfig",
+                    "enhancedElement"
+                ]
+            }
+        }
+    }
+}
