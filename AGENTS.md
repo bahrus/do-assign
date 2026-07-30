@@ -1,4 +1,4 @@
-# AGENTS.md — three-peat
+# AGENTS.md — do-assign
 
 Guidance for AI agents (Kimi and others) working in this repository. This file is the
 Kimi-compatible equivalent of the Kiro steering/spec files found in the shared `types`
@@ -6,52 +6,60 @@ submodule (`types/.kiro/`), plus the deltas discovered while building this proje
 
 ## What this project is
 
-`three-peat` (emoji shorthand `🔁`) is a DOM **element enhancement** (not a custom element)
-that manages an HTML template list: it repeats a template once per item of a list obtained
-from a host element. See `README.md` for the user-facing contract.
+`do-assign` (emoji shorthand `🪧`) is a DOM **element enhancement** (not a custom element)
+that merges values into a host custom element (or remote peer element) when an event fires
+on the adorned element. See `README.md` for the user-facing contract. It is a thin wrapper
+around assign-gingerly's **event-binding** feature — all assignment operators (`=!` toggle,
+`+=` increment, method calls), source vectors (`fromLHS`/`fromHost`/`fromTarget`/`fromEvent`),
+destinations (`toHost`/`toTarget`/`toLHS`), and `get` options (dispatch, stopPropagation,
+preventDefault, nudge, dedup keys) come from assign-gingerly for free.
 
-Architecture (the "modern" stack, same as be-calculating / be-observing / be-switched):
+Architecture (the "modern" stack, same as three-peat / be-calculating / be-observing):
 
 - **be-hive** + **mount-observer** — observe the DOM for the enhancement attribute and spawn
-  the enhancement class. Configuration is declarative JSON (`emc.json`, `🔁.json`) referenced
-  from HTML via `<be-hive><script type=emc src="three-peat/emc.json"></script></be-hive>`.
+  the enhancement class. Configuration is declarative JSON (`emc.json`, `🪧.json`) referenced
+  from HTML via `<be-hive><script type=emc src="do-assign/emc.json"></script></be-hive>`.
 - **roundabout-lib** — reactive property wiring inside the enhancement class (actions run
   when their `ifAllOf` props are available).
 - **assign-gingerly** — does the real work:
   - `assign-gingerly/inferencer/upSearch.js` finds the host (closest `[itemscope]`, else
     shadow-root host; with an id, `getElementById` within the same root node).
-  - `assign-gingerly/handlers/manageTemplateList.js` clones the template per item and
-    reconciles the list by key on updates (markers, hidden/forget, in-place updates).
+  - `assign-gingerly/handlers/addEventListener.js` (`attachEventListener(lhs, config,
+    target, host, inheritedOptions)`) attaches the listener and executes the assignment
+    vectors on each event.
 
 ## File map
 
 ```
-three-peat/
-├── three-peat.js        # Enhancement class (browser code, @ts-check + JSDoc types)
+do-assign/
+├── do-assign.js         # Enhancement class (browser code, @ts-check + JSDoc types)
 ├── emc.mjs              # SOURCE OF TRUTH for emc.json — edit this, never the .json
-├── 🔁.mjs               # SOURCE OF TRUTH for 🔁.json (imports emc.json, overrides base/enhKey)
-├── build.mjs            # node build.mjs → writes emc.json, then 🔁.json (order matters!)
-├── emc.json / 🔁.json   # GENERATED — never edit by hand
+├── 🪧.mjs               # SOURCE OF TRUTH for 🪧.json (imports emc.json, overrides base/enhKey)
+├── build.mjs            # node build.mjs → writes emc.json, then 🪧.json (order matters!)
+├── emc.json / 🪧.json   # GENERATED — never edit by hand
 ├── imports.html         # Import map, pulled into test pages via SSI include
 ├── playwright.config.ts # Chromium only (needs Chrome 146+ JSON import assertions)
 ├── tests/               # *.html fixture + *.spec.mjs twin, "mark=good" idiom
+├── demo/                # Example pages referenced from the README
 ├── .kiro/hooks/         # Kiro agent hooks (auto-build, auto npm update)
 ├── .kimi-code/hooks/    # Kimi Code equivalents — see "AI assistant hooks" below
 └── types/               # git submodule shared across all enhancements — be careful
-    ├── three-peat/types.d.ts        # this project's types (EndUserProps/AllProps/Actions)
-    └── assign-gingerly/types.d.ts   # shared library types
+    ├── do-assign/types.d.ts           # this project's types (EndUserProps/AllProps/Actions)
+    └── assign-gingerly/types.d.ts     # shared library types (AddEventListenerConfig etc.)
 ```
 
 ## Build pipeline rules (from types/.kiro/steering/coding-standards.md)
 
-1. **NEVER edit `emc.json` / `🔁.json` directly** — they are generated artifacts.
-2. Edit `emc.mjs` (or `🔁.mjs`), then run `npm run build`.
+1. **NEVER edit `emc.json` / `🪧.json` directly** — they are generated artifacts.
+2. Edit `emc.mjs` (or `🪧.mjs`), then run `npm run build`.
 3. The emoji `.mjs` must spread `...myJSON` at the top level, or `customData`
    (actions/weakRef/defaultPropVals) is silently dropped and the enhancement loads but
    never reacts.
-4. `build.mjs` writes `emc.json` **before** dynamically importing `🔁.mjs` (the emoji
+4. `build.mjs` writes `emc.json` **before** dynamically importing `🪧.mjs` (the emoji
    module does `import myJSON from './emc.json' with {type: 'json'}` — a static import
    would race).
+5. Neither `.mjs` calls `console.log(render())` — `build.mjs` imports them, so a
+   console.log would print the JSON to the build output.
 
 ## Coding standards
 
@@ -59,7 +67,7 @@ three-peat/
 - `// @ts-check` at the top of every browser file; types come from the `types` submodule
   via `/** @import {...} from './types/<pkg>/types' */` JSDoc comments.
 - Import maps use bare specifiers with trailing `/` mapped to `/node_modules/<pkg>/`;
-  the project maps itself as `"three-peat/": "/"`.
+  the project maps itself as `"do-assign/": "/"`.
 - Enhancement class: plain class, no base class. Constructor signature
   `(enhancedElement, ctx, initVals)` delegates to `init(this, ...)`, which builds
   `RoundaboutOptions` from `ctx.emc.customData` and calls `roundabout()`. Action methods
@@ -74,59 +82,52 @@ In `emc.mjs`, `enhConfig.withAttrs`:
 
 ```js
 withAttrs: {
-    base: 'three-peat',                 // the marker attribute
-    listProp: '${base}-list-prop',      // string template → attr name, prop = key, String
-    each: '${base}-each',               // needs non-String parsing? add an underscore twin:
-    _each: { instanceOf: 'Object' },    // config for `each` (mapsTo defaults to 'each')
+    base: 'do-assign',                          // the marker attribute
+    _base: { mapsTo: 'assignConfig',            // the base attr value itself: JSON → prop
+             instanceOf: 'Object' },            // JSON.parsed (object or array of configs)
+    host: '${base}-host',                       // string template → attr name, prop = key, String
 }
 ```
 
 - `${base}` interpolates the base attribute name. Use kebab-case attribute names —
-  HTML lowercases attribute names at parse time, so camelCase attributes written in HTML
-  would never match. (The README's `🔁-listProp` spelling only survives if set via
-  `setAttribute` from JS; prefer `🔁-list-prop`.)
+  HTML lowercases attribute names at parse time.
 - `instanceOf: 'Object' | 'Array'` → attribute value is JSON.parsed; `'Boolean'` →
   presence check; default is String identity.
-- Custom string DSLs use `parser: 'parse-pattern-statements'` + `parserConfig`, and then
-  every HTML page must register the parser:
-  `<script type=emc-parser src="be-hive/parsers/parse-pattern-statements.js" parser-name=parse-pattern-statements></script>`
-  plus `wait-for-parsers=parse-pattern-statements` on the `<script type=emc>` tag.
+- The `do-assign` attribute value must be **valid JSON** (double quotes, commas — the
+  README's Example 1a is missing a comma after `"on": "click"`; the tests use valid JSON).
+  An array of config objects is also accepted.
 
-## three-peat specifics
+## do-assign specifics
 
-- `hydrate(self)` does: `upSearch` for the host → build a `<template>` from the adorned
-  element's first child (or use the adorned element directly if it *is* a template) →
-  `new ManageTemplateListHandler({do: 'builtIns.manageTemplateList', fromEachItem})` →
-  `handler.assign(targetEl, {forEach, instantiate}, {from: host})` → subscribe for updates.
-- Default `fromEachItem` is `{withOptions: {infer: {byItemprop: true}}}` — item properties
-  flow into the clone's `[itemprop]` descendants with zero configuration.
-- Update subscription: `three-peat-update-on` → plain `host.addEventListener(updateOn)`;
-  else `three-peat-list-prop` → `host.propagator` if it's an EventTarget, else
-  `new Infer(host, listProp).getPropagator()`; event name === listProp.
-- Hosts built with `assign-gingerly/DX/IterableMixin.js`
-  (`class MyElement extends IterableMixin()(HTMLElement)`) keep the list in a private
-  field and expose statics: `MyElement.getItems(instance)` / `setItems(instance, items)`
-  / `assignTo(instance, rhs)`; `setItems` dispatches an `items-changed` event on the
-  instance. three-peat detects the static `getItems` on the host's constructor, uses it
-  as the list source, and subscribes to `items-changed` (when neither `-list-prop` nor
-  `-update-on` is given). See `tests/BasicExample.html` for the canonical usage.
+- `hydrate(self)` does: `upSearch(enhancedElement, hostId)` for the host →
+  `attachEventListener(enhancedElement, config, host, host, options)` per config
+  (single object or array). Both `target` and `host` are the host element — there is no
+  separate "target" in this enhancement's context, so `toTarget` ≡ `toHost`.
+- Default options (per README): `{ akaMethods, withMethods: ['appendChild'],
+  aka: {...aka}, handlers: builtInEmoji }` from `assign-gingerly/DX/emojis.js`.
+- The attribute is the only configuration vector, so `hydrate` simply gates on
+  `ifAllOf: ['assignConfig', 'enhancedElement']` — no `initialized` flag needed
+  (that pattern from three-peat is only required when multiple attributes must all be
+  read before the action runs).
 
-### Notes on assign-gingerly 0.0.67
+### Notes on assign-gingerly 0.0.68
 
-- README said `inference/upSearch.js`; the real path is
-  `assign-gingerly/inferencer/upSearch.js` (fixed in the README).
-- Per-item distribution config key is `toClone` (with `fromHost` for host-level data) —
-  0.0.67 aligned the runtime with the docs; the brief `assignToFragment`/`fromSource`
-  naming in 0.0.64 is gone. The shared types in `types/assign-gingerly/types.d.ts` match
-  the shipped 0.0.67 types.
-- The "generic class mixin" the README mentions is real as of 0.0.67:
-  `assign-gingerly/DX/IterableMixin.js` (see above).
+- `emojis.js` moved: import `{ akaMethods, aka, builtInEmoji }` from
+  `assign-gingerly/DX/emojis.js` (the README's `assign-gingerly/emojis.js` path is stale).
+- `handlers/addEventListener.js` is **not** in the package.json `exports` map (neither is
+  `inferencer/upSearch.js`) — they resolve through the browser import map, which is all
+  this project targets.
+- Runtime quirks of `attachEventListener` (0.0.68): top-level `nudge` in a config is
+  ignored (only `get.nudge` works); top-level `dispatch` works; `get.abortController`
+  only honors an actual `AbortController` instance (string paths are not resolved);
+  `toTargetOptions`/`toHostOptions`/`toLHSOptions` are reserved but unimplemented —
+  use `withOptions` per vector instead.
 
 ## AI assistant hooks (.kiro and .kimi-code)
 
 This project keeps hook definitions for both assistants, so it stays AI-neutral:
 
-- `.kiro/hooks/*.kiro.hook` — Kiro agent hooks (`fileEdited` on `emc.mjs`/`🔁.mjs` →
+- `.kiro/hooks/*.kiro.hook` — Kiro agent hooks (`fileEdited` on `emc.mjs`/`🪧.mjs` →
   `npm run build`; `fileEdited` on `package.json` → `npm run update`).
 - `.kimi-code/hooks/*.mjs` — the Kimi Code equivalents. Kimi Code has no `fileEdited`
   event; the nearest equivalent is a `PostToolUse` hook (observation-only, fail-open)
@@ -147,13 +148,13 @@ To activate:
 [[hooks]]
 event = "PostToolUse"
 matcher = "Write|Edit"
-command = "node C:/git/binding/three-peat/.kimi-code/hooks/auto-build.mjs"
+command = "node C:/git/binding/do-assign/.kimi-code/hooks/auto-build.mjs"
 timeout = 15
 
 [[hooks]]
 event = "PostToolUse"
 matcher = "Write|Edit"
-command = "node C:/git/binding/three-peat/.kimi-code/hooks/auto-npm-update.mjs"
+command = "node C:/git/binding/do-assign/.kimi-code/hooks/auto-npm-update.mjs"
 timeout = 600
 ```
 
@@ -174,18 +175,20 @@ Notes:
 - Test idiom: an `.html` fixture + a `.spec.mjs` twin. The page sets
   `target.setAttribute('mark', 'good')` after a timeout when the assertion holds; the spec
   waits and does `await expect(page.locator('#target')).toHaveAttribute('mark', 'good')`.
-- Shadow-DOM test pages put `<be-hive></be-hive>` inside the declarative shadow template;
-  the emc script stays in the document-level `<be-hive>`.
+- Current tests: `BasicExample` (the `do-assign` attribute, README Example 1a) and
+  `EmojiExample` (the `🪧` attribute + `🪧.json` pipeline).
 
 ## Common pitfalls (from types/.kiro + experience)
 
 - Same method in both `actions` and `compacts` of `customData` → roundabout
   "Conflict detected" error. Pick one trigger mechanism per method.
-- Missing `...myJSON` spread in `🔁.mjs` → enhancement loads but is inert.
+- Missing `...myJSON` spread in `🪧.mjs` → enhancement loads but is inert.
 - Attribute values needing dot paths: use `?.` (parsers split statements on plain `.`).
 - Utility imports come from `be-hive/...`, `assign-gingerly/...`, never legacy
   `trans-render/...` paths.
 - After editing any `.mjs`: `npm run build`, then sanity-check the generated JSON.
+- Invalid JSON in the attribute (single quotes, missing commas) silently kills the
+  enhancement — check the browser console for JSON.parse errors.
 
 ## Creating another new enhancement (Kimi checklist)
 

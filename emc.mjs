@@ -35,5 +35,3 @@ export const emc = {
 export function render(){
     return JSON.stringify(emc, null, 4);
 }
-
-console.log(render());

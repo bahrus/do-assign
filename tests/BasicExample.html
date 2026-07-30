@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Example</title>
+    <!-- #include virtual="/imports.html" -->
+    <be-hive>
+        <script type=emc src="do-assign/emc.json"></script>
+    </be-hive>
+    <script type=module>
+        import 'be-hive/be-hive.js';
+        class MoodStone extends HTMLElement{
+            #isHappy;
+            get isHappy(){
+                return this.#isHappy;
+            }
+            set isHappy(nv){
+                this.#isHappy = nv;
+                this.querySelector('#happy').textContent = nv ? '😊' : '😢'
+            }
+            #age;
+            get age(){
+                return this.#age;
+            }
+            set age(nv){
+                this.#age = nv;
+                this.querySelector('#age').textContent = nv;
+            }
+            connectedCallback(){
+                this.isHappy = true;
+                this.age = 0;
+            }
+        }
+        customElements.define('mood-stone', MoodStone);
+    </script>
+</head>
+<body>
+    <mood-stone itemscope>
+        <div>
+            Is Happy: <span id=happy></span>
+            Age: <span id=age></span>
+        </div>
+        <button do-assign='{
+            "on": "click",
+            "?.isHappy =!": ".",
+            "?.age +=": 10
+        }'>Do Assign Test</button>
+    </mood-stone>
+    <div id=target></div>
+    <script>
+        function runTest(){
+            const ms = document.querySelector('mood-stone');
+            ms.querySelector('button').click();
+            setTimeout(() => {
+                const happy = ms.querySelector('#happy').textContent;
+                const age = ms.querySelector('#age').textContent;
+                if(happy === '😢' && age === '10'){
+                    target.setAttribute('mark', 'good');
+                }
+            }, 500);
+        }
+        setTimeout(() => {
+            runTest();
+        }, 2000);
+    </script>
+</body>
+</html>
