@@ -1,6 +1,6 @@
 {
   "name": "do-assign",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Merge local values into the host custom element or a remote peer element, when events on the adorned element fire.",
   "homepage": "https://github.com/bahrus/do-assign#readme",
   "bugs": {
