@@ -41,7 +41,7 @@ customElements.define('mood-stone', MoodStone);
         Age: <span id=age></span>
     </div>
     <button do-assign='{
-        "on": "click"
+        "on": "click",
         "?.isHappy =!": ".",
         "?.age +=": 10
 
