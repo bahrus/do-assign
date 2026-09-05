@@ -50,7 +50,7 @@ customElements.define('mood-stone', MoodStone);
 ```
 
 
-This applies [the event-binding feature of the assign-gingerly package](https://github.com/bahrus/assign-gingerly/blob/baseline/docs/event-binding.md). The RHS of the attribute can also be an array of such configuration. 
+This applies [the event-binding feature of the assign-gingerly package](https://github.com/bahrus/assign-gingerly/blob/baseline/docs/event-binding.md). The RHS of the attribute can also be an array of such configurations. 
 
 As the link above indicates, there are multiple vectors that one can apply when an event fires.  By default, the syntax above is assigning to the host (mood-stone) with no "from" object to pull values from, so the rhs doesn't have "?."'s.  But we can assign values from the button (which is both the target and the "LHS"), from the event, from the host.  And we can likewise assign to the button, to the host (as above).  If assigning to the host, this would actually allow us to assign things to children of the host based on querySelector.
 
