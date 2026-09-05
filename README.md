@@ -73,6 +73,16 @@ const options = {
 
 And finally, we can dispatch events with other names, stop propagation, prevent default behavior.  Everything that the event-binding link above supports, this element enhancement supports, for free, due to using the assign-gingerly's implementation.
 
+## Security
+
+Because `do-assign` lets an HTML attribute drive assign-gingerly's full `withMethods` / `akaMethods` power — arbitrary property assignment and method calls on the host — it applies assign-gingerly's [strict default permissions profile](https://github.com/bahrus/assign-gingerly/blob/baseline/docs/assign-permissions.md#strict-default-profile-strictdefaultpermissions) (`strictDefaultPermissions`) to every assignment it performs, via a `PermissionProcessor` passed down to `attachEventListener`. This closes off the well-known DOM XSS sinks by default, even though the `do-assign` attribute itself is assumed to come from trusted markup:
+
+- **Blocked outright:** `innerHTML`, `outerHTML`, `srcdoc`, `cssText`, and the methods `insertAdjacentHTML`, `setHTMLUnsafe`, `execCommand`.
+- **Same-origin only:** `src`, `href`, `action`, `formAction` (as both properties and attributes) — cross-origin values are dropped, blocking `javascript:`/`data:`/exfiltration URLs while normal same-app links, images, and form actions keep working.
+- **Blocked as attributes:** inline event-handler attributes (`onclick`, `onerror`, `onload`, etc.) — the browser turns these into live handlers as soon as they're set, so there's no safe form of them.
+
+A blocked assignment is skipped with a `console.warn`, not a thrown error, so a page keeps running with the sink neutralized. This profile is a sensible default, not a hard limit of the underlying engine — a consumer embedding `do-assign` in a context where these restrictions don't fit can fork/extend the permissions profile in assign-gingerly's own docs linked above.
+
 ## Relationship to do-invoke, do-inc, do-toggle
 
 do-assign covers most of the same ground as [do-invoke](https://github.com/bahrus/do-invoke), [do-inc](https://github.com/bahrus/do-inc), [do-toggle](https://github.com/bahrus/do-toggle) and [be-dispatching](https://github.com/bahrus/be-dispatching). The key differences:

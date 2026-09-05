@@ -22,7 +22,7 @@
     "update": "ncu -u && npm install"
   },
   "dependencies": {
-    "assign-gingerly": "0.0.94",
+    "assign-gingerly": "0.0.95",
     "be-hive": "0.1.18",
     "id-generation": "0.0.5",
     "mount-observer": "0.1.53",

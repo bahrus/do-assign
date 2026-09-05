@@ -5,6 +5,22 @@
 /** @import {EMC} from './types/mount-observer/types' */;
 /** @import {RAConfig} from './types/roundabout/types' */;
 
+import {strictDefaultPermissions} from 'assign-gingerly/DX/strictDefaultPermissions.js';
+import {PermissionProcessor} from 'assign-gingerly/assignPermissions/PermissionProcessor.js';
+
+/**
+ * do-assign lets HTML attributes drive assignGingerly's full withMethods /
+ * akaMethods power (see the addEventListener handler below). That power is
+ * safe when the attribute markup is trusted, but do-assign has no way to
+ * know that at runtime, so it applies assign-gingerly's strict default
+ * permissions profile (blocks innerHTML/outerHTML, javascript:/data: URLs,
+ * inline event-handler attributes, insertAdjacentHTML, etc.) to every
+ * assignment it makes. See assign-gingerly's docs/assign-permissions.md
+ * ("strict default profile") for what this profile allows and blocks, and
+ * README.md's "Security" section for how to opt into a looser policy.
+ */
+const permissionProcessor = new PermissionProcessor(strictDefaultPermissions);
+
 /**
  * @implements {Actions}
  */
@@ -71,7 +87,7 @@ class DoAssign {
         for(const config of configs){
             // toTarget and toHost both resolve to the host: there is no
             // separate "target" in this enhancement's context.
-            attachEventListener(enhancedElement, config, host, host, options);
+            attachEventListener(enhancedElement, config, host, host, options, permissionProcessor);
         }
 
         return /** @type {PAP} */ ({resolved: true});
