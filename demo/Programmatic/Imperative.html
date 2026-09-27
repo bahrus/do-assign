@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programmatic imperative</title>
+    <!-- #include virtual="/imports.html" -->
+    <script type=module>
+        class MoodStone extends HTMLElement{
+            #isHappy;
+            get isHappy(){
+                return this.#isHappy;
+            }
+            set isHappy(nv){
+                this.#isHappy = nv;
+                this.querySelector('#happy').textContent = nv ? '😊' : '😢'
+            }
+            #age;
+            get age(){
+                return this.#age;
+            }
+            set age(nv){
+                this.#age = nv;
+                this.querySelector('#age').textContent = nv;
+            }
+            connectedCallback(){
+                this.isHappy = true;
+                this.age = 0;
+            }
+        }
+        customElements.define('mood-stone', MoodStone);
+    </script>
+</head>
+<body>
+    <mood-stone id=moodStone>
+        <div>
+            Is Happy: <span id=happy></span>
+            Age: <span id=age></span>
+        </div>
+    </mood-stone>
+    <button id=button>Do Assign Test</button>
+    <script type=module>
+        import {defDoAssign} from '/def.js';
+        const emc = await defDoAssign(document.body);
+        // equivalent to <button do-assign='{...}' do-assign-host=moodStone>
+        Object.assign(button.enh.get(emc), {
+            host: 'moodStone',
+            assignConfig: {
+                on: 'click',
+                '?.isHappy =!': '.',
+                '?.age +=': 10,
+            },
+        });
+    </script>
+</body>
+</html>

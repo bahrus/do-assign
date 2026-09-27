@@ -83,6 +83,60 @@ Because `do-assign` lets an HTML attribute drive assign-gingerly's full `withMet
 
 A blocked assignment is skipped with a `console.warn`, not a thrown error, so a page keeps running with the sink neutralized. This profile is a sensible default, not a hard limit of the underlying engine — a consumer embedding `do-assign` in a context where these restrictions don't fit can fork/extend the permissions profile in assign-gingerly's own docs linked above.
 
+## Programmatic attachment (no attribute)
+
+The attribute syntax shown above shines for server-rendered HTML and progressive enhancement:  the markup alone says what happens when the button is clicked.  But most web development today renders on the client, with a framework (Lit, React, Vue, Svelte, etc.) that already has a JavaScript reference to each element it creates.  In that setting, attaching do-assign programmatically is the better fit:
+
+1.  **A less clunky API.**  Frameworks tend to be awkward about setting arbitrary (let alone emoji) attributes, and hand-writing JSON inside an HTML attribute is notoriously fragile -- quotes must be escaped or alternated, trailing commas and missing commas break the whole attribute, and your editor can't help.  Setting `assignConfig` to a plain object is ordinary JavaScript, which the framework, your editor, and TypeScript all understand.
+2.  **Less stringifying and parsing.**  With an attribute, the framework serializes the configuration to JSON, which do-assign then `JSON.parse`s back.  Setting `assignConfig` directly skips both steps.
+3.  **Less overhead monitoring attributes.**  The attribute approach relies on [be-hive](https://github.com/bahrus/be-hive) / [mount-observer](https://github.com/bahrus/mount-observer) watching the DOM for elements that carry (or gain) the attribute, and for changes to its value.  The programmatic approach needs none of that -- `def.js` just registers the enhancement's config, and the enhancement is attached exactly when, and to exactly the elements, your code says.
+
+Both approaches produce the same enhancement -- same host resolution, same default options, and the same [strict permissions profile](#security) -- so you can mix them in one app:  attributes for server-rendered islands, programmatic attachment inside client-rendered components.
+
+First register the enhancement's config once:
+
+```JS
+import { defDoAssign } from 'do-assign/def.js';
+const emc = await defDoAssign(document.body); // or a shadow root's host, for a scoped registry
+```
+
+Then set the properties the attributes map to:
+
+| Attribute         | Property       | Notes                                                                                  |
+|-------------------|----------------|----------------------------------------------------------------------------------------|
+| `do-assign` / `🪧` | `assignConfig` | The same object (or array of objects) the attribute's JSON parses to.  Reassigning it replaces the previous listeners. |
+| `do-assign-host`  | `host`         | id of a peer element to use as the host, instead of the closest `[itemscope]` / shadow host. |
+
+### Declarative -- via `enh.set`
+
+```JS
+// equivalent to Example 1a's <button do-assign='{"on": "click", "?.isHappy =!": ".", "?.age +=": 10}'>
+button.enh.set.doAssign.assignConfig = {
+    on: 'click',
+    '?.isHappy =!': '.',
+    '?.age +=': 10,
+};
+```
+
+This can be done before or after `defDoAssign` has been called.
+
+### Imperative -- via `enh.get()`
+
+```JS
+Object.assign(button.enh.get(emc), {
+    host: 'moodStone',   // a peer <mood-stone id=moodStone>
+    assignConfig: {
+        on: 'click',
+        '?.isHappy =!': '.',
+        '?.age +=': 10,
+    },
+});
+```
+
+Because a framework may re-render with new props, reassigning `assignConfig` (or `host`) tears down the listeners from the previous value before attaching the new ones -- unless a config manages its own listener lifetime via `get.key` or `get.abortController`.
+
+See [demo/Programmatic](demo/Programmatic/) for runnable examples.
+
 ## Relationship to do-invoke, do-inc, do-toggle
 
 do-assign covers most of the same ground as [do-invoke](https://github.com/bahrus/do-invoke), [do-inc](https://github.com/bahrus/do-inc), [do-toggle](https://github.com/bahrus/do-toggle) and [be-dispatching](https://github.com/bahrus/be-dispatching). The key differences:

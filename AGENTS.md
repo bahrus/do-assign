@@ -33,6 +33,7 @@ Architecture (the "modern" stack, same as three-peat / be-calculating / be-obser
 ```
 do-assign/
 ├── do-assign.js         # Enhancement class (browser code, @ts-check + JSDoc types)
+├── def.js               # defDoAssign(ref) — registers emc.json for programmatic attachment
 ├── emc.mjs              # SOURCE OF TRUTH for emc.json — edit this, never the .json
 ├── 🪧.mjs               # SOURCE OF TRUTH for 🪧.json (imports emc.json, overrides base/enhKey)
 ├── build.mjs            # node build.mjs → writes emc.json, then 🪧.json (order matters!)
@@ -175,8 +176,11 @@ Notes:
 - Test idiom: an `.html` fixture + a `.spec.mjs` twin. The page sets
   `target.setAttribute('mark', 'good')` after a timeout when the assertion holds; the spec
   waits and does `await expect(page.locator('#target')).toHaveAttribute('mark', 'good')`.
-- Current tests: `BasicExample` (the `do-assign` attribute, README Example 1a) and
-  `EmojiExample` (the `🪧` attribute + `🪧.json` pipeline).
+- Current tests: `BasicExample` (the `do-assign` attribute, README Example 1a),
+  `EmojiExample` (the `🪧` attribute + `🪧.json` pipeline), and
+  `Programmatic/*` (attachment via `def.js` with no attribute — `enh.set` in and
+  out of sequence, `enh.get()` with a peer `host`, and reassigning `assignConfig`).
+  See `types/ImportantEnhancementAddendum.md` for the programmatic checklist.
 
 ## Common pitfalls (from types/.kiro + experience)
 

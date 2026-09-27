@@ -43,7 +43,7 @@ class DoAssign {
      * @param {PAP} initVals
      */
     async init(self, enhancedElement, ctx, initVals){
-        const {customData} = /** @type {EMC<any, AllProps, Element, RAConfig<AllProps, Actions>>} */ (ctx.emc);
+        const {customData} = /** @type {EMC<any, AllProps, Element, RAConfig<AllProps, Actions>>} */ (ctx.emc || ctx.config);
         /**
          * @type {RoundaboutOptions}
          */
@@ -57,12 +57,20 @@ class DoAssign {
             }
         };
         await (await import('roundabout-lib/roundabout.js')).roundabout(raOptions);
+        self.initialized = true;
     }
+
+    /** @type {AbortController | undefined} */
+    #ac;
 
     /**
      * @param {AP} self
      */
     async hydrate(self){
+        // Re-hydrating (assignConfig or host reassigned) replaces the
+        // listeners from the previous pass rather than stacking on them.
+        this.#ac?.abort();
+        const ac = this.#ac = new AbortController();
         const {enhancedElement, assignConfig, host: hostId} = self;
 
         // Find the host that the (shorthand) assignments merge into:
@@ -85,9 +93,16 @@ class DoAssign {
         };
         const configs = Array.isArray(assignConfig) ? assignConfig : [assignConfig];
         for(const config of configs){
+            // Unless the config manages its own listener lifetime (a dedup key
+            // or its own abortController), tie it to this hydrate pass.
+            // Copied, so a caller-supplied config object is never mutated.
+            const get = config.get ?? {};
+            const configWithAC = (get.key || get.abortController)
+                ? config
+                : {...config, get: {...get, abortController: ac}};
             // toTarget and toHost both resolve to the host: there is no
             // separate "target" in this enhancement's context.
-            attachEventListener(enhancedElement, config, host, host, options, permissionProcessor);
+            attachEventListener(enhancedElement, configWithAC, host, host, options, permissionProcessor);
         }
 
         return /** @type {PAP} */ ({resolved: true});

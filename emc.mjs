@@ -26,7 +26,10 @@ export const emc = {
         },
         actions: {
             hydrate: {
-                ifAllOf: ['assignConfig', 'enhancedElement']
+                // host is listed so that roundabout monitors it -- reassigning
+                // it re-hydrates against the new host.
+                ifKeyIn: ['assignConfig', 'host', 'initialized'],
+                ifAllOf: ['assignConfig', 'enhancedElement', 'initialized']
             }
         }
     }

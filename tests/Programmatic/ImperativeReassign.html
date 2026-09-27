@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programmatic imperative reassign</title>
+    <!-- #include virtual="/imports.html" -->
+    <script type=module>
+        class MoodStone extends HTMLElement{
+            #isHappy;
+            get isHappy(){
+                return this.#isHappy;
+            }
+            set isHappy(nv){
+                this.#isHappy = nv;
+                this.querySelector('#happy').textContent = nv ? '😊' : '😢'
+            }
+            #age;
+            get age(){
+                return this.#age;
+            }
+            set age(nv){
+                this.#age = nv;
+                this.querySelector('#age').textContent = nv;
+            }
+            connectedCallback(){
+                this.isHappy = true;
+                this.age = 0;
+            }
+        }
+        customElements.define('mood-stone', MoodStone);
+    </script>
+</head>
+<body>
+    <mood-stone itemscope>
+        <div>
+            Is Happy: <span id=happy></span>
+            Age: <span id=age></span>
+        </div>
+        <button id=button>Do Assign Test</button>
+    </mood-stone>
+    <div id=target></div>
+    <script type=module>
+        import {defDoAssign} from '/def.js';
+        const emc = await defDoAssign(document.body);
+        const doAssign = button.enh.get(emc);
+        doAssign.assignConfig = {on: 'click', '?.age +=': 10};
+        // e.g. a framework re-rendering with new props:  this replaces the
+        // click listener above rather than adding a second one.
+        setTimeout(() => {
+            doAssign.assignConfig = {on: 'click', '?.age +=': 1};
+        }, 500);
+
+        setTimeout(() => {
+            for(let i = 0; i < 2; i++) button.click();
+            setTimeout(() => {
+                const happy = document.querySelector('#happy').textContent;
+                const age = document.querySelector('#age').textContent;
+                if(age === '2') target.setAttribute('mark', 'good');
+            }, 300);
+        }, 1500);
+    </script>
+</body>
+</html>

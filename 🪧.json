@@ -19,9 +19,15 @@
         },
         "actions": {
             "hydrate": {
+                "ifKeyIn": [
+                    "assignConfig",
+                    "host",
+                    "initialized"
+                ],
                 "ifAllOf": [
                     "assignConfig",
-                    "enhancedElement"
+                    "enhancedElement",
+                    "initialized"
                 ]
             }
         }
