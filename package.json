@@ -22,12 +22,12 @@
     "update": "ncu -u && npm install"
   },
   "dependencies": {
-    "assign-gingerly": "0.0.95",
+    "assign-gingerly": "0.0.97",
     "be-hive": "0.1.18",
     "id-generation": "0.0.5",
     "mount-observer": "0.1.53",
     "nested-regex-groups": "0.0.8",
-    "roundabout-lib": "0.0.36"
+    "roundabout-lib": "0.0.38"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
